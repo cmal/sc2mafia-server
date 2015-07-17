@@ -1,50 +1,18 @@
 # This is the Twisted Fast Poetry Server, version 2.0
 
 from twisted.application import internet, service
-from twisted.internet.protocol import ServerFactory, Protocol
-from twisted.python import log
-
-# Normally we would import these classes from another module.
-
-# class PoetryProtocol(Protocol):
-
-#     def connectionMade(self):
-#         poem = self.factory.service.poem
-#         log.msg('sending %d bytes of poetry to %s'
-#                 % (len(poem), self.transport.getPeer()))
-#         self.transport.write(poem)
-#         self.transport.loseConnection()
-
-
-# class PoetryFactory(ServerFactory):
-
-#     protocol = PoetryProtocol
-
-#     def __init__(self, service):
-#         self.service = service
-
-
-# class PoetryService(service.Service):
-
-#     def __init__(self, welcome_file):
-#         self.welcome_file = welcome_file
-
-#     def startService(self):
-#         service.Service.startService(self)
-#         self.poem = open(self.welcome_file).read()
-#         log.msg('loaded a poem from: %s' % (self.welcome_file,))
-
+# import these classes from another module.
+from server.server import PoetryProtocol, PoetryFactory, PoetryService
 
 # configuration parameters
 port = 10000
 iface = 'localhost'
 welcome_file = 'welcome.txt'
 
-# this will hold the services that combine to form the poetry server
+# this will hold the services that combine to form the server
 top_service = service.MultiService()
 
-# the poetry service holds the poem. it will load the poem when it is
-# started
+# create multiple services and then add to the top service
 poetry_service = PoetryService(welcome_file)
 poetry_service.setServiceParent(top_service)
 
