@@ -1,5 +1,6 @@
 from server.server import PoetryFactory
 from twisted.trial import unittest
+from twisted.internet.protocol import Protocol
 
 
 class PoetryClientProtocol(Protocol):
