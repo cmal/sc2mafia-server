@@ -1,21 +1,8 @@
-from server.server import PoetryFactory
+from server.server import PoetryFactory, PoetryService
 from twisted.trial import unittest
-from twisted.internet.protocol import Protocol
-
-
-class PoetryClientProtocol(Protocol):
-
-    poem = ''
-
-    def dataReceived(self, data):
-        self.poem += data
-
-    def connectionLost(self, reason):
-        self.poemReceived(self.poem)
-
-    def poemReceived(self, poem):
-        self.factory.poem_finished(poem)
-
+from twisted.internet.protocol import Protocol, ClientFactory
+from twisted.internet.defer import Deferred
+from twisted.internet.error import ConnectError
 
 class PoetryClientProtocol(Protocol):
 
@@ -29,6 +16,23 @@ class PoetryClientProtocol(Protocol):
 
     def poemReceived(self, poem):
         self.factory.poem_finished(poem)
+
+class PoetryClientFactory(ClientFactory):
+
+    protocol = PoetryClientProtocol
+
+    def __init__(self):
+        self.deferred = Deferred()
+
+    def poem_finished(self, poem):
+        if self.deferred is not None:
+            d, self.deferred = self.deferred, None
+            d.callback(poem)
+
+    def clientConnectionFailed(self, connector, reason):
+        if self.deferred is not None:
+            d, self.deferred = self.deferred, None
+            d.errback(reason)
 
 def get_poetry(host, port):
     from twisted.internet import reactor
@@ -36,12 +40,14 @@ def get_poetry(host, port):
     reactor.connectTCP(host, port, factory)
     return factory.deferred
 
-wf = "welcome.txt"
 
 class PeotryTestCase(unittest.TestCase):
+
     def setUp(self):
-        send_data = open(wf).read()
-        factory = PoetryFactory(content)
+        self.wf = "../welcome.txt"
+        self.send_data = open(self.wf).read()
+        self.service = PoetryService(self.wf)
+        factory = PoetryFactory(self.service)
         from twisted.internet import reactor
         self.port = reactor.listenTCP(0, factory, interface="127.0.0.1")
         self.portnum = self.port.getHost().port
@@ -52,10 +58,11 @@ class PeotryTestCase(unittest.TestCase):
 
     def test_client(self):
         """The correct poem is returned by get_poetry."""
+        self.service.startService()
         d = get_poetry('127.0.0.1', self.portnum)
 
-        def got_poem(rcv_data):
-            self.assertEquals(rcv_data, send_data)
+        def got_poem(poem):
+            self.assertEquals(poem, self.send_data)
 
         d.addCallback(got_poem)
 

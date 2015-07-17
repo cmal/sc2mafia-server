@@ -7,13 +7,13 @@ from server.server import PoetryProtocol, PoetryFactory, PoetryService
 # configuration parameters
 port = 10000
 iface = 'localhost'
-welcome_file = 'welcome.txt'
+wf = 'welcome.txt'
 
 # this will hold the services that combine to form the server
 top_service = service.MultiService()
 
 # create multiple services and then add to the top service
-poetry_service = PoetryService(welcome_file)
+poetry_service = PoetryService(wf)
 poetry_service.setServiceParent(top_service)
 
 # the tcp service connects the factory to a listening socket. it will

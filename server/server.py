@@ -8,10 +8,10 @@ from twisted.python import log
 class PoetryProtocol(Protocol):
 
     def connectionMade(self):
-        senddata = self.factory.service.senddata
+        send_data = self.factory.service.send_data
         log.msg('sending %d bytes of peotry to %s'
-                % (len(senddata), self.transport.getPeer()))
-        self.transport.write(senddata)
+                % (len(send_data), self.transport.getPeer()))
+        self.transport.write(send_data)
         self.transport.loseConnection()
 
 
@@ -29,5 +29,5 @@ class PoetryService(service.Service):
 
     def startService(self):
         service.Service.startService(self)
-        self.senddata = open(self.wf).read()
+        self.send_data = open(self.wf).read()
         log.msg('loaded a welcome file from: %s' % (self.wf,))
