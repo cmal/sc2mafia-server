@@ -1,65 +1,107 @@
-# This is the Twisted Fast Poetry Server, version 2.0
+# This is the Twisted Poetry Transform Server, version 1.0
 
-from twisted.application import internet, service
-from twisted.internet.protocol import ServerFactory, Protocol
-from twisted.python import log
+#import optparse
 
-# Normally we would import these classes from another module.
-
-# class PoetryProtocol(Protocol):
-
-#     def connectionMade(self):
-#         poem = self.factory.service.poem
-#         log.msg('sending %d bytes of poetry to %s'
-#                 % (len(poem), self.transport.getPeer()))
-#         self.transport.write(poem)
-#         self.transport.loseConnection()
+from twisted.internet.protocol import ServerFactory
+from twisted.protocols.basic import NetstringReceiver
 
 
-# class PoetryFactory(ServerFactory):
+#def parse_args():
+#    usage = """usage: %prog [options]
+#
+#This is the Poetry Transform Server.
+#Run it like this:
+#
+#  python transformedpoetry.py
+#
+#If you are in the base directory of the twisted-intro package,
+#you could run it like this:
+#
+#  python twisted-server-1/transformedpoetry.py --port 11000
+#
+#to provide poetry transformation on port 11000.
+#"""
+#
+#    parser = optparse.OptionParser(usage)
+#
+#    help = "The port to listen on. Default to a random available port."
+#    parser.add_option('--port', type='int', help=help)
+#
+#    help = "The interface to listen on. Default is localhost."
+#    parser.add_option('--iface', help=help, default='localhost')
+#
+#    options, args = parser.parse_args()
+#
+#    if len(args) != 0:
+#        parser.error('Bad arguments.')
+#
+#    return options
 
-#     protocol = PoetryProtocol
 
-#     def __init__(self, service):
-#         self.service = service
+class TransformService(object):
 
-
-# class PoetryService(service.Service):
-
-#     def __init__(self, welcome_file):
-#         self.welcome_file = welcome_file
-
-#     def startService(self):
-#         service.Service.startService(self)
-#         self.poem = open(self.welcome_file).read()
-#         log.msg('loaded a poem from: %s' % (self.welcome_file,))
+    def cummingsify(self, poem):
+        return poem.lower()
 
 
-# configuration parameters
-port = 10000
-iface = 'localhost'
-welcome_file = 'welcome.txt'
+class TransformProtocol(NetstringReceiver):
 
-# this will hold the services that combine to form the poetry server
-top_service = service.MultiService()
+    def stringReceived(self, request):
+        if '.' not in request: # bad request
+            self.transport.loseConnection()
+            return
 
-# the poetry service holds the poem. it will load the poem when it is
-# started
-poetry_service = PoetryService(welcome_file)
-poetry_service.setServiceParent(top_service)
+        xform_name, poem = request.split('.', 1)
 
-# the tcp service connects the factory to a listening socket. it will
-# create the listening socket when it is started
-factory = PoetryFactory(poetry_service)
-tcp_service = internet.TCPServer(port, factory, interface=iface)
-tcp_service.setServiceParent(top_service)
+        self.xformRequestReceived(xform_name, poem)
 
-# this variable has to be named 'application'
-application = service.Application("sc2mafia")
+    def xformRequestReceived(self, xform_name, poem):
+        new_poem = self.factory.transform(xform_name, poem)
 
-# this hooks the collection we made to the application
-top_service.setServiceParent(application)
+        if new_poem is not None:
+            self.sendString(new_poem)
 
-# at this point, the application is ready to go. when started by
-# twistd it will start the child services, thus starting up the
-# poetry server
+        self.transport.loseConnection()
+
+
+class TransformFactory(ServerFactory):
+
+    protocol = TransformProtocol
+
+    def __init__(self, service):
+        self.service = service
+
+    def transform(self, xform_name, poem):
+        thunk = getattr(self, 'xform_%s' % (xform_name,), None)
+
+        if thunk is None: # no such transform
+            return None
+
+        try:
+            return thunk(poem)
+        except:
+            return None # transform failed
+
+    def xform_cummingsify(self, poem):
+        return self.service.cummingsify(poem)
+
+#
+#def main():
+#    options = parse_args()
+#
+#    service = TransformService()
+#
+#    factory = TransformFactory(service)
+#
+#    from twisted.internet import reactor
+#
+#    port = reactor.listenTCP(options.port or 0, factory,
+#                             interface=options.iface)
+#
+#    print 'Serving transforms on %s.' % (port.getHost(),)
+#
+#    reactor.run()
+#
+#
+#if __name__ == '__main__':
+#    main()
