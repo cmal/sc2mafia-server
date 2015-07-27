@@ -1,8 +1,9 @@
 from server.server import PoetryFactory, PoetryService
 from twisted.trial import unittest
-from twisted.internet.protocol import Protocol, ClientFactory
+from twisted.internet.protocol import Protocol, ClientFactory, ServerFactory
 from twisted.internet.defer import Deferred
 from twisted.internet.error import ConnectError
+from echo_client import EchoClientFactory
 
 class PoetryClientProtocol(Protocol):
 
@@ -37,7 +38,7 @@ class PoetryClientFactory(ClientFactory):
 def get_poetry(host, port):
     from twisted.internet import reactor
     factory = PoetryClientFactory()
-    reactor.connectTCP(host, port, factory)
+    reactor.connvectTCP(host, port, factory)
     return factory.deferred
 
 
@@ -74,3 +75,24 @@ class PeotryTestCase(unittest.TestCase):
         d = get_poetry('127.0.0.1', 0)
         return self.assertFailure(d, ConnectError)
 
+def echo_line(host, port):
+    from twisted.internet import reactor
+    factory = EchoClientFactory()
+    reactor.connectTCP(host, port, factory)
+    return factory.deferred
+
+class EchoProtocol(Protocol):
+    def dataReceived(self, data):
+        self.transport.write(data)
+
+class EchoFactory(ServerFactory):
+    protocol = EchoProtocol
+    pass
+
+class EchoTestCase(UnitTest.TestCase):
+
+    def setUp(self):
+        
+        
+    def test_echo_client(self):
+        

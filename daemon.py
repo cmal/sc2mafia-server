@@ -1,24 +1,28 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 # This is the Twisted Fast Poetry Server, version 2.0
 
 from twisted.application import internet, service
 # import these classes from another module.
-from server.server import PoetryProtocol, PoetryFactory, PoetryService
+from server.server import GameServerProtocol, GameServerFactory, GameServerService
 
+import sys
+reload(sys)
+sys.setdefaultencoding('utf8')
 # configuration parameters
 port = 10000
 iface = 'localhost'
-wf = 'welcome.txt'
 
 # this will hold the services that combine to form the server
 top_service = service.MultiService()
 
 # create multiple services and then add to the top service
-poetry_service = PoetryService(wf)
-poetry_service.setServiceParent(top_service)
+game_service = GameServerService()
+game_service.setServiceParent(top_service)
 
 # the tcp service connects the factory to a listening socket. it will
 # create the listening socket when it is started
-factory = PoetryFactory(poetry_service)
+factory = GameServerFactory(game_service)
 tcp_service = internet.TCPServer(port, factory, interface=iface)
 tcp_service.setServiceParent(top_service)
 
