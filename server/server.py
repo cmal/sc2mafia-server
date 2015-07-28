@@ -11,7 +11,9 @@ import sys
 
 from game.realm import Realm
 from game.room import Room
-from client import Introduce, RealmInfo, JoinRoom, LeaveRoom
+from network import Introduce, RealmInfo, JoinRoom, LeaveRoom
+from auth.auth import make_password, check_password
+from db import UserDb
 
 
 class GameServerProtocol(AMP):
