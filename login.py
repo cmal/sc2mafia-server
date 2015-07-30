@@ -18,15 +18,16 @@ class LoginDialog(wx.Dialog):
         return ((u'用户名', 0, self.OnUser),(u'密  码', wx.TE_PASSWORD, self.OnPassword))
                                     
     def dataButtons(self):
-        return ((wx.ID_OK, u'确定'),(wx.ID_CANCEL, u'取消'))
+        return ((wx.ID_OK, u'登陆/注册'),(wx.ID_CANCEL, u'取消'))
         
     def CreateSizer(self):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(wx.StaticText(self, -1, u'请输入用户名和密码'), 0, wx.ALIGN_CENTER | wx.ALL, 5)
         for eachLabel, eachStyle, eachHandler in self.dataEntries():
             self.CreateEntry(sizer, eachLabel, eachStyle, eachHandler)
-        sizer.Add(wx.StaticLine(self, -1, size=(20, -1), style=wx.LI_HORIZONTAL),
-                            0, wx.GROW | wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.TOP, 5)
+        sizer.Add(wx.StaticLine(self, -1, size=(20, -1),\
+                style=wx.LI_HORIZONTAL),\
+                0, wx.GROW | wx.ALIGN_CENTER_VERTICAL | wx.RIGHT | wx.TOP, 5)
         btnsizer = wx.StdDialogButtonSizer()
         for eachId, eachLabel in self.dataButtons():
             self.CreateButton(btnsizer, eachId, eachLabel)
@@ -57,14 +58,4 @@ class LoginDialog(wx.Dialog):
         
     def GetValue(self):
         return (self.user, self.password)
-        
 
-#dialog = wx.TextEntryDialog(None,u'请选择一个名字:',"Text Entry", "Default Value", style=wx.OK)
-#if dialog.ShowModal() == wx.ID_OK:
-#  player_name_str = dialog.GetValue()
-#
-##        player_name = player_name_str
-##        print type(player_name_str)
-##        print type(player_name)
-#player_name = player_name_str.decode('utf-8') # windows改为gbk，wxpython仍然utf-8？
-#

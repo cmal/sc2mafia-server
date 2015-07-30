@@ -11,19 +11,18 @@ import sys
 
 from game.realm import Realm
 from game.room import Room
-from network import Introduce, RealmInfo, JoinRoom, LeaveRoom
+from network import Introduce, AuthPlayer, RealmInfo, JoinRoom, LeaveRoom
 from auth.auth import make_password, check_password
-from db import UserDb
+from db import User, SessionMaker
+from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 
 class GameServerProtocol(AMP):
 
     def __init__(self):
-        pass
-    
+        self.session = SessionMaker()
+
     def connectionMade(self):
-#        log.msg(type(self.factory.chn_room.name))
-#        log.msg("%s"%self.factory.chn_room.name)
         self.player = self.factory.realm.create_player()
         log.msg("player created, with identifier: %d" %(id(self.player),))
         log.msg(sys.getdefaultencoding())
@@ -33,13 +32,48 @@ class GameServerProtocol(AMP):
             self.leave_room()
         del self.factory.realm.players[id(self.player)]
 
-    def set_player_name(self, player_name):
-        log.msg(type(player_name))
-        player_name = player_name.encode('utf-8')
-        log.msg(player_name)
+    def auth_create_player(self, session, name, password): 
+        """ name:unicode, password:unicode
+        """
+        q = session.query(User).filter_by(name=name).all()
+        if q: #auth player
+            b = auth_player(name, password)
+            if b:
+                return 'player authed'
+            else:
+                return 'auth failed'
+        else: #create player
+            try:
+                u = User(name, password)
+                session.add(u)
+                session.commit()
+#            except IntegrityError:
+#                return 'player_name already exists'
+            except InvalidRequestError:
+                raise session.rollback()
+                return 'null player_name or null password'
+            return 'player created'
+
+
+    def introduce(self, player_name, password):
+        log.msg(player_name, password)
         self.player.name = player_name
-        return {}
-    Introduce.responder(set_player_name)
+        encoded_pswd = make_password(password)
+        return {'message': self.create_auth_player(self.session,
+                                              player_name,
+                                              encoded_pswd)}
+    Introduce.responder(introduce)
+
+    def auth_player(self, name, password):
+        log.msg(name, password) #unicode, unicode
+        pswd_for_name = self.session.query(User.password).\
+                        filter_by(name==name) # list?
+        log.msg("type of pswd_for_name(query result):", type(pswd_for_name))
+        if check_password(password, stored_pswd[0]):
+            return True
+        else:
+            return False
+#    AuthPlayer.responder(auth_player)
 
     def get_realm_info(self):
         amplist = []

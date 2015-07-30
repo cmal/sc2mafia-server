@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from twisted.internet.protocol import Protocol, ClientFactory
 from twisted.internet.defer import Deferred
-from twisted.protocols.amp import AMP, Command, Integer, String, Unicode, AmpList
-from game.realm import Realm
-from game.room import Room
+from twisted.protocols.amp import AMP, Command, Integer, String, Unicode, AmpList, Boolean
+#from game.realm import Realm
+#from game.room import Room
 import random
 
 class RealmInfo(Command):
@@ -18,7 +17,12 @@ class RealmInfo(Command):
 class Introduce(Command):
     arguments = [('player_name', Unicode()),
                  ('password', Unicode())]
-    response = []
+    response = [('message', String())]
+
+class AuthPlayer(Command):
+    arguments = [('player_name', Unicode()),
+                 ('password', Unicode())]
+    response = [('message', String())] # should add Player info
 
 class JoinRoom(Command):
     arguments = [('room_id', Integer())]
@@ -40,16 +44,24 @@ def global_no_call_back(*args):
 class GameClientProtocol(AMP):
 
     def connectionMade(self):
-        self.callRemote(Introduce,player_name=self.player_name).addCallback(global_no_call_back).addErrback(global_no_err_back)
-        self.callRemote(RealmInfo).addCallback(self.got_realm_info).addErrback(global_no_err_back)
-
+        pass
 
     def connectionLost(self, reason):
         print "connection lost %s" % reason
         pass
+    
+#    def remote_create_player(self, name, pswd):
+#        self.callRemote(CreatePlayer,player_name=name,password=pswd).addCallback(global_no_call_back).addErrback(global_no_err_back)
 
-    def introduce(self): # XXX identifier没用 删掉
-        return self.callRemote(Introduce).addErrback(global_no_err_back)
+    def remote_get_realm_info(self):
+        self.callRemote(RealmInfo).addCallback(self.got_realm_info).addErrback(global_no_err_back)
+
+    def introduce(self, name, pswd): # XXX identifier没用 删掉
+        d = self.callRemote(Introduce, player_name=name, password=pswd).addErrback(global_no_err_back)
+        def after_introduce(msg):
+            return msg
+        d.addCallback(after_introduce)
+        return d
 
 #    def player_introduced(self,result):
 #        print "got player id from server:%d"%(result['identifier'],)
@@ -92,44 +104,23 @@ class GameClientProtocol(AMP):
     def left_room(self):
         pass
 
-class GameClientFactory(ClientFactory):
+# class GameClientFactory(ClientFactory):
 
-    protocol = GameClientProtocol
+#     def __init__(self):
+#         self.realm = Realm()
+#         self.realm.add_room(Room(u"游戏1",[],15)) # name, players, size
+#         pass
 
-    def __init__(self):
-        self.realm = Realm()
-        self.realm.add_room(Room(u"游戏1",[],15)) # name, players, size
-        pass
+#     def buildProtocol(self, address_ignored):
+#         return GameClientProtocol(self.realm)
 
-    def buildProtocol(self, address):
-        proto = ClientFactory.buildProtocol(self, address)
-        return proto
+#     def trans_finished(self):
+#         pass
 
-    def trans_finished(self):
-        pass
 
-    def clientConnectionFailed(self, connector, reason):
-        print 'Failed to connect to:', connector.getDestination()
-        self.trans_finished()
+#     def clientConnectionFailed(self, connector, reason):
+#         print 'Failed to connect to:', connector.getDestination()
+#         self.trans_finished()
 
-def identify_hasher(encoded):
-    """
-    Returns an instance of a loaded password hasher.
-    Identifies hasher algorithm by examining encoded hash, and calls
-    get_hasher() to return hasher. Raises ValueError if
-    algorithm cannot be identified, or if hasher is not loaded.
-    """
-    ## Ancient versions of Django created plain MD5 passwords and accepted
-    ## MD5 passwords with an empty salt.
-    #if ((len(encoded) == 32 and '$' not in encoded) or
-    #        (len(encoded) == 37 and encoded.startswith('md5$$'))):
-    #    algorithm = 'unsalted_md5'
-    ## Ancient versions of Django accepted SHA1 passwords with an empty salt.
-    #elif len(encoded) == 46 and encoded.startswith('sha1$$'):
-    #    algorithm = 'unsalted_sha1'
-    #else:
-    #    algorithm = encoded.split('$', 1)[0]
-    algorithm = encoded.split('$', 1)[0]
-    return get_hasher(algorithm)
 
 
