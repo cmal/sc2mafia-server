@@ -37,7 +37,7 @@ class GameServerProtocol(AMP):
         """
         q = session.query(User).filter_by(name=name).all()
         if q: #auth player
-            b = auth_player(name, password)
+            b = self.auth_player(name, password)
             if b:
                 return 'player authed'
             else:
@@ -59,17 +59,17 @@ class GameServerProtocol(AMP):
         log.msg(player_name, password)
         self.player.name = player_name
         encoded_pswd = make_password(password)
-        return {'message': self.create_auth_player(self.session,
+        return {'message': self.auth_create_player(self.session,
                                               player_name,
                                               encoded_pswd)}
     Introduce.responder(introduce)
 
     def auth_player(self, name, password):
         log.msg(name, password) #unicode, unicode
-        pswd_for_name = self.session.query(User.password).\
-                        filter_by(name==name) # list?
-        log.msg("type of pswd_for_name(query result):", type(pswd_for_name))
-        if check_password(password, stored_pswd[0]):
+        pswd = self.session.query(User.password).\
+                        filter_by(name=name).scalar()
+        log.msg("type of pswd(query result):", type(pswd))
+        if check_password(password, pswd):
             return True
         else:
             return False

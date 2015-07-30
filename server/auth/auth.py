@@ -265,6 +265,11 @@ UNUSABLE_PASSWORD_SUFFIX_LENGTH = 40  # number of random chars to add after UNUS
 
 hasher = PBKDF2PasswordHasher()
 
+def is_password_usable(encoded):
+    if encoded is None or encoded.startswith(UNUSABLE_PASSWORD_PREFIX):
+        return False
+    return True
+
 def check_password(password, encoded):
     """
     Returns a boolean of whether the raw password matches the three
@@ -272,9 +277,11 @@ def check_password(password, encoded):
     If setter is specified, it'll be called when you need to
     regenerate the password.
     """
+    print password
+    print encoded
     if password is None or not is_password_usable(encoded):
         return False
-
+    
     is_correct = hasher.verify(password, encoded)
     return is_correct
 
