@@ -277,8 +277,6 @@ def check_password(password, encoded):
     If setter is specified, it'll be called when you need to
     regenerate the password.
     """
-    print password
-    print encoded
     if password is None or not is_password_usable(encoded):
         return False
     

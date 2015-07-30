@@ -70,7 +70,8 @@ class Sc2mafiaApp(wx.App):
         self.protocol = protocol
         return self.protocol.introduce(self.player_name, self.password)
 
-    def gotIntroduced(self, msg):
+    def gotIntroduced(self, d_msg):
+        msg = d_msg['message']
         if msg == 'auth failed':
             wx.MessageBox(u"密码错误",u"错误")
             self.login()
